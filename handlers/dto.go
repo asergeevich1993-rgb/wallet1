@@ -13,7 +13,7 @@ type DTOWallet struct {
 	Amount    int64  `json:"amount"`
 }
 
-func (dw *DTOWallet) ValidateForCreate() error {
+func (dw *DTOWallet) Validate() error {
 	dw.ID = strings.TrimSpace(dw.ID)
 	dw.Operation = strings.TrimSpace(dw.Operation)
 
@@ -30,13 +30,6 @@ func (dw *DTOWallet) ValidateForCreate() error {
 	}
 	if dw.Amount <= 0 {
 		return errors.New("invalid amount")
-	}
-	return nil
-}
-func (dw *DTOWallet) Validateuuid() error {
-	_, err := uuid.Parse(dw.ID)
-	if err != nil {
-		return errors.New("invalid uuid")
 	}
 	return nil
 }

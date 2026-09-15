@@ -19,11 +19,6 @@ type Storage struct {
 	pool *pgxpool.Pool
 }
 
-type MWallet struct {
-	ID      string
-	Balance int64
-}
-
 func NewDataBase(ctx context.Context, dsn string) (*Storage, error) {
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -50,7 +45,7 @@ func (s *Storage) GetBalance(ctx context.Context, id string) (MWallet, error) {
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&mw.ID, &mw.Balance)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return MWallet{}, errors.New("not found")
+			return MWallet{}, ErrNotFound
 		}
 		return MWallet{}, err
 	}
@@ -68,7 +63,7 @@ func (s *Storage) Deposit(ctx context.Context, id string, amount int64) (int64, 
 	if err != nil {
 		tx.Rollback(ctx)
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, errors.New("not found")
+			return 0, ErrNotFound
 		}
 		return 0, err
 	}
@@ -97,13 +92,13 @@ func (s *Storage) Withdraw(ctx context.Context, id string, amount int64) (int64,
 	if err != nil {
 		tx.Rollback(ctx)
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, errors.New("not found")
+			return 0, ErrNotFound
 		}
 		return 0, err
 	}
 	if mw.Balance < amount {
 		tx.Rollback(ctx)
-		return 0, errors.New("low balance")
+		return 0, ErrLowBalance
 	}
 	newbalance := mw.Balance - amount
 

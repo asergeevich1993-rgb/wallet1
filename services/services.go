@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"wallet/storage"
 
 	"github.com/google/uuid"
@@ -44,7 +43,7 @@ func (wo *WalletOperation) ChangeBalance(ctx context.Context, id, operation stri
 			}
 			return balance, nil
 		} else {
-			return 0, errors.New("invalid amount")
+			return 0, ErrInvalidAmount
 		}
 
 	case "WITHDRAW":
@@ -55,11 +54,11 @@ func (wo *WalletOperation) ChangeBalance(ctx context.Context, id, operation stri
 			}
 			return balance, nil
 		} else {
-			return 0, errors.New("invalid amount")
+			return 0, ErrInvalidAmount
 		}
 
 	}
-	return 0, errors.New("ivalid operation")
+	return 0, ErrInvalidOperation
 }
 
 func (wo *WalletOperation) GetBalance(ctx context.Context, id string) (storage.MWallet, error) {
