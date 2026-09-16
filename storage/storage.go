@@ -31,7 +31,7 @@ func NewDataBase(ctx context.Context, dsn string) (*Storage, error) {
 
 func (s *Storage) CreateWallet(ctx context.Context, id string) (string, error) {
 	var uuid string
-	sql := `INSERT INTO table (wallet_uuid,balance) VALUES ($1,0) RETURNING wallet_uuid`
+	sql := `INSERT INTO wallets (wallet_uuid,balance) VALUES ($1,0) RETURNING wallet_uuid`
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&uuid)
 	if err != nil {
 		return "", err
@@ -41,7 +41,7 @@ func (s *Storage) CreateWallet(ctx context.Context, id string) (string, error) {
 
 func (s *Storage) GetBalance(ctx context.Context, id string) (MWallet, error) {
 	var mw MWallet
-	sql := `SELECT wallet_uuid,balance FROM table WHERE wallet_uuid = $1`
+	sql := `SELECT wallet_uuid,balance FROM wallets WHERE wallet_uuid = $1`
 	err := s.pool.QueryRow(ctx, sql, id).Scan(&mw.ID, &mw.Balance)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -58,7 +58,7 @@ func (s *Storage) Deposit(ctx context.Context, id string, amount int64) (int64, 
 		return 0, err
 	}
 	var mw MWallet
-	sql := `SELECT wallet_uuid,balance FROM table WHERE wallet_uuid = $1 FOR UPDATE`
+	sql := `SELECT wallet_uuid,balance FROM wallets WHERE wallet_uuid = $1 FOR UPDATE`
 	err = tx.QueryRow(ctx, sql, id).Scan(&mw.ID, &mw.Balance)
 	if err != nil {
 		tx.Rollback(ctx)
@@ -69,7 +69,7 @@ func (s *Storage) Deposit(ctx context.Context, id string, amount int64) (int64, 
 	}
 	newbalance := mw.Balance + amount
 	var balance int64
-	sqlu := `UPDATE table SET balance=$1 WHERE wallet_uuid = $2 RETURNING balance`
+	sqlu := `UPDATE wallets SET balance=$1 WHERE wallet_uuid = $2 RETURNING balance`
 	err = tx.QueryRow(ctx, sqlu, newbalance, mw.ID).Scan(&balance)
 	if err != nil {
 		tx.Rollback(ctx)
@@ -87,7 +87,7 @@ func (s *Storage) Withdraw(ctx context.Context, id string, amount int64) (int64,
 		return 0, err
 	}
 	var mw MWallet
-	sql := `SELECT wallet_uuid,balance FROM table WHERE wallet_uuid = $1 FOR UPDATE`
+	sql := `SELECT wallet_uuid,balance FROM wallets WHERE wallet_uuid = $1 FOR UPDATE`
 	err = tx.QueryRow(ctx, sql, id).Scan(&mw.ID, &mw.Balance)
 	if err != nil {
 		tx.Rollback(ctx)
@@ -103,7 +103,7 @@ func (s *Storage) Withdraw(ctx context.Context, id string, amount int64) (int64,
 	newbalance := mw.Balance - amount
 
 	var balance int64
-	sqlu := `UPDATE table SET balance=$1 WHERE wallet_uuid = $2 RETURNING balance`
+	sqlu := `UPDATE wallets SET balance=$1 WHERE wallet_uuid = $2 RETURNING balance`
 	err = tx.QueryRow(ctx, sqlu, newbalance, mw.ID).Scan(&balance)
 	if err != nil {
 		tx.Rollback(ctx)

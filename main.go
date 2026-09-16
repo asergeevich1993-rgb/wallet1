@@ -14,11 +14,21 @@ import (
 	"wallet/storage"
 )
 
+func dsn() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
+}
+
 func main() {
 	pctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dsn := "postgres://postgres:Svs1512!@localhost:5432/testdb"
+	dsn := dsn()
 	strg, err := storage.NewDataBase(pctx, dsn)
 	if err != nil {
 		log.Fatal(err)
