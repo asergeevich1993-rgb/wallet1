@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net/http"
 	handler "wallet/handlers"
@@ -32,4 +33,11 @@ func (s *Server) StartServer() {
 	if err := s.svr.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+}
+func (s *Server) Shutdown(ctx context.Context) error {
+	err := s.svr.Shutdown(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
