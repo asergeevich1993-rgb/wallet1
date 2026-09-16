@@ -12,6 +12,8 @@ POST /api/v1/wallet
   "operationType": "DEPOSIT",
   "amount": 1000
 }
+
+
 Получить баланс:
 GET /api/v1/wallets/{WALLET_UUID}
 
