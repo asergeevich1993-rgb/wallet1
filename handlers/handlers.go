@@ -35,7 +35,7 @@ func (hh *Handlers) HandleCreateWallet(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"Ваш uuid": uuid})
+	json.NewEncoder(w).Encode(map[string]string{"uuid": uuid})
 
 }
 func (hh *Handlers) HandleChangeBalance(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +70,7 @@ func (hh *Handlers) HandleChangeBalance(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]int64{"Ваш баланс изменен": balance})
+	json.NewEncoder(w).Encode(map[string]int64{"new balance": balance})
 }
 func (hh *Handlers) HandleGetBalance(w http.ResponseWriter, r *http.Request) {
 	rctx := r.Context()
