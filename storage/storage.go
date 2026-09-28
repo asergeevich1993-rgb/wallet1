@@ -53,64 +53,48 @@ func (s *Storage) GetBalance(ctx context.Context, id string) (MWallet, error) {
 
 }
 func (s *Storage) Deposit(ctx context.Context, id string, amount int64) (int64, error) {
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return 0, err
-	}
+
 	var mw MWallet
-	sql := `SELECT wallet_uuid,balance FROM wallets WHERE wallet_uuid = $1 FOR UPDATE`
-	err = tx.QueryRow(ctx, sql, id).Scan(&mw.ID, &mw.Balance)
+	query := `UPDATE wallets SET balance=balance+$1 WHERE wallet_uuid = $2 RETURNING balance`
+	err := s.pool.QueryRow(ctx, query, amount, id).Scan(&mw.Balance)
 	if err != nil {
-		tx.Rollback(ctx)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, ErrNotFound
 		}
 		return 0, err
 	}
-	newbalance := mw.Balance + amount
-	var balance int64
-	sqlu := `UPDATE wallets SET balance=$1 WHERE wallet_uuid = $2 RETURNING balance`
-	err = tx.QueryRow(ctx, sqlu, newbalance, mw.ID).Scan(&balance)
-	if err != nil {
-		tx.Rollback(ctx)
-		return 0, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return 0, err
-	}
-	return balance, nil
+
+	return mw.Balance, nil
 }
 
 func (s *Storage) Withdraw(ctx context.Context, id string, amount int64) (int64, error) {
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return 0, err
-	}
+
 	var mw MWallet
-	sql := `SELECT wallet_uuid,balance FROM wallets WHERE wallet_uuid = $1 FOR UPDATE`
-	err = tx.QueryRow(ctx, sql, id).Scan(&mw.ID, &mw.Balance)
+	sql := `UPDATE wallets SET balance=balance-$1 WHERE wallet_uuid = $2 AND balance >=$1 RETURNING balance`
+	err := s.pool.QueryRow(ctx, sql, amount, id).Scan(&mw.Balance)
 	if err != nil {
-		tx.Rollback(ctx)
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, ErrNotFound
+			exists, checkErr := s.walletExists(ctx, id)
+			if checkErr != nil {
+				return 0, checkErr
+			}
+			if !exists {
+				return 0, ErrNotFound
+			}
+			return 0, ErrLowBalance
 		}
 		return 0, err
 	}
-	if mw.Balance < amount {
-		tx.Rollback(ctx)
-		return 0, ErrLowBalance
-	}
-	newbalance := mw.Balance - amount
 
-	var balance int64
-	sqlu := `UPDATE wallets SET balance=$1 WHERE wallet_uuid = $2 RETURNING balance`
-	err = tx.QueryRow(ctx, sqlu, newbalance, mw.ID).Scan(&balance)
+	return mw.Balance, nil
+}
+
+func (s *Storage) walletExists(ctx context.Context, id string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS (SELECT 1 FROM wallets WHERE wallet_uuid=$1)`
+	err := s.pool.QueryRow(ctx, query, id).Scan(&exists)
 	if err != nil {
-		tx.Rollback(ctx)
-		return 0, err
+		return exists, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return 0, err
-	}
-	return balance, nil
+	return exists, nil
 }
