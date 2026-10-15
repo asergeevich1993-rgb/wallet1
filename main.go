@@ -25,33 +25,36 @@ func dsn() string {
 }
 
 func main() {
-	pctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
 
-	dsn := dsn()
-	strg, err := storage.NewDataBase(pctx, dsn)
+	strdsn := dsn()
+	strg, err := storage.NewDataBase(ctx, strdsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	pid := os.Getpid()
-	fmt.Println(pid)
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGTERM)
-	go func() {
-		<-sigchan
-		cancel()
-	}()
 
-	srvc := services.NewWalett(strg)
+	shutdownDone := make(chan struct{})
+
+	srvc := services.NewWallet(strg)
 	hndlrs := handler.CreateHandlers(srvc)
 	srv := server.CreateNewServer(hndlrs)
 	go func() {
-		<-pctx.Done()
-		sctx, scancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer scancel()
-		srv.Shutdown(sctx)
+		defer close(shutdownDone)
+		<-ctx.Done()
+		nctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := srv.Shutdown(nctx)
+		if err != nil {
+			log.Printf("shutdown error %v", err)
+		}
 	}()
 
-	srv.StartServer()
+	err = srv.StartServer()
+	if err != nil {
+		log.Fatalf("error %v", err)
+	}
+	<-shutdownDone
 
+	strg.Close()
 }

@@ -2,8 +2,9 @@ package server
 
 import (
 	"context"
-	"log"
+	"errors"
 	"net/http"
+	"time"
 	handler "wallet/handlers"
 )
 
@@ -13,26 +14,34 @@ type Server struct {
 }
 
 func CreateNewServer(hh handler.HandlersInt) *Server {
-	return &Server{
-		handler: hh,
-	}
-}
-func (s *Server) StartServer() {
+
 	router := http.NewServeMux()
 
-	router.HandleFunc("POST /api/v1/wallets", s.handler.HandleCreateWallet)
-	router.HandleFunc("POST /api/v1/wallet", s.handler.HandleChangeBalance)
-	router.HandleFunc("GET /api/v1/wallets/{WALLET_UUID}", s.handler.HandleGetBalance)
+	router.HandleFunc("POST /api/v1/wallets", hh.HandleCreateWallet)
+	router.HandleFunc("POST /api/v1/wallet", hh.HandleChangeBalance)
+	router.HandleFunc("GET /api/v1/wallets/{WALLET_UUID}", hh.HandleGetBalance)
 
-	saver := Saver(router)
+	recover := Recover(router)
 
-	s.svr = &http.Server{
-		Addr:    ":8080",
-		Handler: saver,
+	return &Server{
+		handler: hh,
+		svr: &http.Server{
+			Addr:              ":8080",
+			Handler:           recover,
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+			IdleTimeout:       60 * time.Second,
+		},
 	}
-	if err := s.svr.ListenAndServe(); err != nil {
-		log.Fatal(err)
+}
+func (s *Server) StartServer() error {
+
+	err := s.svr.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
 	}
+	return err
 }
 func (s *Server) Shutdown(ctx context.Context) error {
 	err := s.svr.Shutdown(ctx)
