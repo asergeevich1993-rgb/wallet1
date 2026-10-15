@@ -98,3 +98,7 @@ func (s *Storage) walletExists(ctx context.Context, id string) (bool, error) {
 	}
 	return exists, nil
 }
+
+func (s *Storage) Close() {
+	s.pool.Close()
+}

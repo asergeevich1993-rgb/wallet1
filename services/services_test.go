@@ -107,7 +107,7 @@ func TestChangeBalance(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wo := NewWalett(tt.mockStorage)
+			wo := NewWallet(tt.mockStorage)
 
 			balance, err := wo.ChangeBalance(context.Background(), "some-id", tt.operation, tt.amount)
 
@@ -130,7 +130,7 @@ func TestChangeBalance(t *testing.T) {
 
 func TestCreateWallet(t *testing.T) {
 	ms := &mockStorage{createWalletResult: "11111111-1111-1111-1111-111111111111"}
-	wo := NewWalett(ms)
+	wo := NewWallet(ms)
 
 	id, err := wo.CreateWallet(context.Background())
 
@@ -144,7 +144,7 @@ func TestCreateWallet(t *testing.T) {
 
 func TestCreateWallet_StorageError(t *testing.T) {
 	ms := &mockStorage{createWalletErr: errors.New("db down")}
-	wo := NewWalett(ms)
+	wo := NewWallet(ms)
 
 	_, err := wo.CreateWallet(context.Background())
 
@@ -157,7 +157,7 @@ func TestGetBalance(t *testing.T) {
 	ms := &mockStorage{
 		getBalanceResult: storage.MWallet{ID: "some-id", Balance: 700},
 	}
-	wo := NewWalett(ms)
+	wo := NewWallet(ms)
 
 	wallet, err := wo.GetBalance(context.Background(), "some-id")
 
@@ -170,7 +170,7 @@ func TestGetBalance(t *testing.T) {
 }
 func TestGetBalance_NotFound(t *testing.T) {
 	ms := &mockStorage{getBalanceErr: storage.ErrNotFound}
-	wo := NewWalett(ms)
+	wo := NewWallet(ms)
 
 	_, err := wo.GetBalance(context.Background(), "unknown-id")
 

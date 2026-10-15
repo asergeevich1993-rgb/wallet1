@@ -17,7 +17,7 @@ type WalletOperation struct {
 	storage storage.StorageInt
 }
 
-func NewWalett(si storage.StorageInt) *WalletOperation {
+func NewWallet(si storage.StorageInt) *WalletOperation {
 	return &WalletOperation{
 		storage: si,
 	}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func Saver(router http.Handler) http.Handler {
+func Recover(router http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
